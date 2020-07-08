@@ -349,7 +349,7 @@ def write_results(prediction, confidence, num_classes, device, nms=True,
 
 def predict_transform_half(prediction, inp_dim, anchors, num_classes,
                            CUDA=True):
-    ''' predict transfor_half
+    ''' predict transform half
     '''
     batch_size = prediction.size(0)
     stride = inp_dim // prediction.size(2)
@@ -412,7 +412,7 @@ def predict_transform_half(prediction, inp_dim, anchors, num_classes,
 
 def write_results_half(prediction, confidence, num_classes, nms=True,
                        nms_conf=0.4):
-    ''' clothing-ma
+    ''' write results half
     '''
     conf_mask = (prediction[:, :, 4] > confidence).half().unsqueeze(2)
     prediction = prediction * conf_mask
