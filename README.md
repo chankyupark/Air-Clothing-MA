@@ -1542,7 +1542,7 @@ Recommend this procedure!!  (from ubuntu 18.04)
 <span class="c9"></span>		
 
 ## Example : Online Demostration - image 
-![Alt text](example1.png)
+<img src="example1.png" width="50%" height="50%" title="px(픽셀) 크기 설정" alt="Demo_image"></img>
 ## LICENSE
 This software is a part of AIR, and follows the [AIR License and Service Agreement](LICENSE.md).
 
