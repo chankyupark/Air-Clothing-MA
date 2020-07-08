@@ -30,6 +30,18 @@ Recommend this procedure!!  (from ubuntu 18.04)
 4.   Run 'cam_demo.py' to run web-cam demostration
 
 ## Clothing multi-attributes definition
+1	상의 종류(7)	shirt, jumper, jacket, vest, parka, coat, dress					
+2	상의 색상(14)	white, black, gray, pink, red, green, blue, brown, navy, beige, yellow, purple, orange, mixed					
+3	상의 계절(4)	spring, summer, autunm, winter					
+4	상의 패턴(6)	plain, checker, dotted, floral, striped, mixed					
+5	상의 소매(3)	short sleeves, long sleeves, no sleeves					
+6	상의 성별(2)	man, woman					
+7	하의 종류(2)	pants, skirt					
+8	하의 색상(14)	white, black, gray, pink, red, green, blue, brown, navy, beige, yellow, purple, orange, mixed					
+9	하의 계절(4)	spring, summer, autunm, winter					
+10	하의 패턴(6)	plain, checker, dotted, floral, striped, mixed					
+11	하의 길이(2)	short pants, long pants					
+12	하의 성별(2)	man, woman					
 
 ## LICENSE
 This software is a part of AIR, and follows the [AIR License and Service Agreement](LICENSE.md).
