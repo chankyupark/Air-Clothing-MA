@@ -29,6 +29,8 @@ Recommend this procedure!!  (from ubuntu 18.04)
 3.   Run 'file_demo.py' to run each image file demostration
 4.   Run 'cam_demo.py' to run web-cam demostration
 
+## Clothing multi-attributes definition
+
 ## LICENSE
 This software is a part of AIR, and follows the [AIR License and Service Agreement](LICENSE.md).
 
