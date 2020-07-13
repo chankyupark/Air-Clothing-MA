@@ -45,6 +45,89 @@ attribute_pool = [colors_a, pattern_a, gender_a, season_a, upper_t_a, u_sleeves_
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+def detect_attributes(image, yolo_dim, yolov3, encoder):
+    text_results = []
+    image, orig_img, im_dim = prep_image(image, yolo_dim)
+    im_dim = torch.FloatTensor(im_dim).repeat(1, 2)
+    image_tensor = image.to(device)
+    im_dim = im_dim.to(device)
+
+    # Generate an caption from the image
+    detections = yolov3(image_tensor, device, True) # prediction mode for yolo-v3
+    detections = write_results(detections, args.confidence, num_classes, device, nms=True, nms_conf=args.nms_thresh)
+    # original image dimension --> im_dim
+    #view_image(detections)
+
+    os.system('clear')
+    if type(detections) != int: 
+        if detections.shape[0]:
+            bboxs = detections[:, 1:5].clone()
+            im_dim = im_dim.repeat(detections.shape[0], 1)
+            scaling_factor = torch.min(yolo_dim/im_dim, 1)[0].view(-1, 1)
+
+            detections[:, [1, 3]] -= (yolo_dim - scaling_factor*im_dim[:, 0].view(-1, 1))/2
+            detections[:, [2, 4]] -= (yolo_dim - scaling_factor*im_dim[:, 1].view(-1, 1))/2
+
+            detections[:, 1:5] /= scaling_factor
+
+            small_object_ratio = torch.FloatTensor(detections.shape[0])
+
+            for i in range(detections.shape[0]):
+                detections[i, [1, 3]] = torch.clamp(detections[i, [1, 3]], 0.0, im_dim[i, 0])
+                detections[i, [2, 4]] = torch.clamp(detections[i, [2, 4]], 0.0, im_dim[i, 1])
+
+                object_area = (detections[i, 3] - detections[i, 1])*(detections[i, 4] - detections[i, 2])
+                orig_img_area = im_dim[i, 0]*im_dim[i, 1]
+                small_object_ratio[i] = object_area/orig_img_area
+
+            detections = detections[small_object_ratio > 0.02]
+            im_dim = im_dim[small_object_ratio > 0.02] 
+
+            if detections.size(0) > 0:
+                feature = yolov3.get_feature()
+                feature = feature.repeat(detections.size(0), 1, 1, 1)
+
+                #orig_img_dim = im_dim[:, 1:]
+                #orig_img_dim = orig_img_dim.repeat(1, 2)
+
+                scaling_val = 16 
+
+                bboxs /= scaling_val
+                bboxs = bboxs.round()
+                bboxs_index = torch.arange(bboxs.size(0), dtype=torch.int)
+                bboxs_index = bboxs_index.to(device)
+                bboxs = bboxs.to(device)
+
+                roi_align = RoIAlign(args.roi_size, args.roi_size, transform_fpcoor=True).to(device)
+                roi_features = roi_align(feature, bboxs, bboxs_index)
+            
+                outputs = encoder(roi_features)
+                    #attribute_size = [15, 7, 3, 5, 7, 4, 15, 7, 3, 5, 4, 3, 4]
+                #losses = [criteria[i](outputs[i], targets[i]) for i in range(len(attribute_size))]
+
+                for i in range(detections.shape[0]):
+
+                    sampled_caption = []
+                    #attr_fc = outputs[]
+                    for j in range(len(outputs)):
+                        #temp = outputs[j][i].data
+                        max_index = torch.max(outputs[j][i].data, 0)[1]
+                        word = attribute_pool[j][max_index]
+                        sampled_caption.append(word)
+
+                    #c11 = sampled_caption[11]
+                    #sampled_caption[11] = sampled_caption[10]
+                    #sampled_caption[10] = c11
+
+                    sentence = ' '.join(sampled_caption)
+
+
+                    #print (str(i+1) + ': ' + sentence)
+                    text_results.append((str(i+1) + ': ' + sentence)
+                    write(detections[i], orig_img, sentence, i+1, coco_classes, colors)
+                    #list(map(lambda x: write(x, orig_img, captions), detections[i].unsqueeze(0)))
+                return text_results, orig_img
+                        
 def main(args):
     # Image preprocessing
     transform = transforms.Compose([
@@ -59,9 +142,9 @@ def main(args):
     yolov3  = Darknet(args.cfg_file)
     yolov3.load_weights(args.weights_file)
     yolov3.net_info["height"] = args.reso    
-    inp_dim = int(yolov3.net_info["height"])
-    assert inp_dim % 32 == 0 
-    assert inp_dim > 32
+    yolo_dim = int(yolov3.net_info["height"])
+    assert yolo_dim % 32 == 0 
+    assert yolo_dim > 32
     print("yolo-v3 network successfully loaded")
 
     attribute_size = [15, 7, 3, 5, 8, 4, 15, 7, 3, 5, 3, 3, 4]
@@ -89,102 +172,12 @@ def main(args):
     
     yolov3.eval()
     encoder.eval()
-
-
     encoder.load_state_dict(torch.load(args.encoder_path))
 
-    for inx, image in enumerate(imlist):
-
-        #print(image)
-        image, orig_img, im_dim = prep_image(image, inp_dim)
-        im_dim = torch.FloatTensor(im_dim).repeat(1, 2)
-        
-        
-        image_tensor = image.to(device)
-        im_dim = im_dim.to(device)
-        
-        # Generate an caption from the image
-        detections = yolov3(image_tensor, device, True) # prediction mode for yolo-v3
-        detections = write_results(detections, args.confidence, num_classes, device, nms=True, nms_conf=args.nms_thresh)
-        # original image dimension --> im_dim
-        #view_image(detections)
-
-        
-        os.system('clear')
-        if type(detections) != int: 
-            if detections.shape[0]:
-                bboxs = detections[:, 1:5].clone()
-                im_dim = im_dim.repeat(detections.shape[0], 1)
-                scaling_factor = torch.min(inp_dim/im_dim, 1)[0].view(-1, 1)
-                
-                detections[:, [1, 3]] -= (inp_dim - scaling_factor*im_dim[:, 0].view(-1, 1))/2
-                detections[:, [2, 4]] -= (inp_dim - scaling_factor*im_dim[:, 1].view(-1, 1))/2
-
-                detections[:, 1:5] /= scaling_factor
-
-                small_object_ratio = torch.FloatTensor(detections.shape[0])
-
-                for i in range(detections.shape[0]):
-                    detections[i, [1, 3]] = torch.clamp(detections[i, [1, 3]], 0.0, im_dim[i, 0])
-                    detections[i, [2, 4]] = torch.clamp(detections[i, [2, 4]], 0.0, im_dim[i, 1])
-
-                    object_area = (detections[i, 3] - detections[i, 1])*(detections[i, 4] - detections[i, 2])
-                    orig_img_area = im_dim[i, 0]*im_dim[i, 1]
-                    small_object_ratio[i] = object_area/orig_img_area
-                
-                detections = detections[small_object_ratio > 0.02]
-                im_dim = im_dim[small_object_ratio > 0.02] 
-                
-                if detections.size(0) > 0:
-                    feature = yolov3.get_feature()
-                    feature = feature.repeat(detections.size(0), 1, 1, 1)
-
-                    #orig_img_dim = im_dim[:, 1:]
-                    #orig_img_dim = orig_img_dim.repeat(1, 2)
-                   
-                    scaling_val = 16 
-
-                    bboxs /= scaling_val
-                    bboxs = bboxs.round()
-                    bboxs_index = torch.arange(bboxs.size(0), dtype=torch.int)
-                    bboxs_index = bboxs_index.to(device)
-                    bboxs = bboxs.to(device)
-
-                    roi_align = RoIAlign(args.roi_size, args.roi_size, transform_fpcoor=True).to(device)
-                    roi_features = roi_align(feature, bboxs, bboxs_index)
-                #    print(roi_features)
-                #    print(roi_features.size())
-
-                    #roi_features = roi_features.reshape(roi_features.size(0), -1)
-
-                    #roi_align_feature = encoder(roi_features)
-                    
-                    outputs = encoder(roi_features)
-                        #attribute_size = [15, 7, 3, 5, 7, 4, 15, 7, 3, 5, 4, 3, 4]
-                    #losses = [criteria[i](outputs[i], targets[i]) for i in range(len(attribute_size))]
-
-                    for i in range(detections.shape[0]):
-
-                        sampled_caption = []
-                        #attr_fc = outputs[]
-                        for j in range(len(outputs)):
-                            #temp = outputs[j][i].data
-                            max_index = torch.max(outputs[j][i].data, 0)[1]
-                            word = attribute_pool[j][max_index]
-                            sampled_caption.append(word)
-                        
-                        c11 = sampled_caption[11]
-                        sampled_caption[11] = sampled_caption[10]
-                        sampled_caption[10] = c11
-
-                        sentence = ' '.join(sampled_caption)
-                 
-                        # again sampling for testing
-                        #print ('---------------------------')
-                        print (str(i+1) + ': ' + sentence)
-                        write(detections[i], orig_img, sentence, i+1, coco_classes, colors)
-                        #list(map(lambda x: write(x, orig_img, captions), detections[i].unsqueeze(0)))
-        
+    for _ , image in enumerate(imlist):
+        text_results, result_img = detect_attributes(image, yolo_dim, yolov3, encoder)
+        for x in range(len(text_results)):
+            print(text_results[x])
         cv2.imshow("frame", orig_img)
         key = cv2.waitKey(0)
         os.system('clear')
