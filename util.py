@@ -225,7 +225,7 @@ def unique(tensor):
     return tensor_res
 
 
-def write_results(prediction, confidence, num_classes, device, nms=True,
+def write_results(prediction, confidence, device, num_classes=80, nms=True,
                   nms_conf=0.4):
     ''' write prediction results on image
     '''
