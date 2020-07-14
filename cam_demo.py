@@ -10,7 +10,7 @@ import pickle
 import os
 import time
 from torchvision import transforms
-from model import EncoderClothing, DecoderClothing
+from model import EncoderClothing
 from darknet import Darknet
 from PIL import Image
 #import util
