@@ -13,6 +13,7 @@ from torchvision import transforms
 from model import EncoderClothing
 from darknet import Darknet
 from PIL import Image
+from util import *
 import cv2
 import pickle as pkl
 import random
@@ -77,8 +78,8 @@ attribute_pool = [
     pattern_a,
     gender_a,
     season_a,
-    l_sleeves_a,
     lower_t_a,
+    l_sleeves_a,
     leg_pose_a,
 ]
 
@@ -162,15 +163,21 @@ def detect_attributes(image, yolo_dim, yolov3, encoder):
                 ).to(device)
                 roi_features = roi_align(feature, bboxs, bboxs_index)
 
+                outputs = encoder(roi_features)
+
                 for i in range(detections.shape[0]):
 
                     sampled_caption = []
 
-                    for j in range(len(outputs)):
+                    for j in range(len(outputs)-1):
                         max_index = torch.max(outputs[j][i].data, 0)[1]
                         word = attribute_pool[j][max_index]
                         sampled_caption.append(word)
-
+             # for reversion lower length and lower type      
+                    c11 = sampled_caption[11]
+                    sampled_caption[11] = sampled_caption[10]
+                    sampled_caption[10] = c11
+                    
                     sentence = " ".join(sampled_caption)
 
                     print(str(i + 1) + ": " + sentence)
@@ -190,6 +197,7 @@ def main(args):
     '''
     # Image preprocessing
     transform = transforms.Compose([transforms.ToTensor()])
+
 
     # Load vocabulary wrapper
 
