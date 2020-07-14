@@ -2,7 +2,6 @@
 online demo version using image files 
 """
 import torch
-import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import pickle
@@ -11,7 +10,6 @@ from os import listdir, getcwd
 import os.path as osp
 import glob
 from torchvision import transforms
-from build_clothing_vocab import Vocabulary
 from model import EncoderClothing, DecoderClothing
 from darknet import Darknet
 from PIL import Image
