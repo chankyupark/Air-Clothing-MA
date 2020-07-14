@@ -214,8 +214,8 @@ def main(args):
             detections = write_results(
                 detections,
                 args.confidence,
-                num_classes,
                 device,
+                num_classes,
                 nms=True,
                 nms_conf=args.nms_thresh,
             )
