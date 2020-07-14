@@ -7,8 +7,8 @@ from torch.autograd import Variable
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import util.count_parameters as count
-import util.convert2cpu as cpu
+from util import count_parameters as count
+from util import convert2cpu as cpu
 from PIL import Image, ImageDraw
 
 
