@@ -13,7 +13,7 @@ from torchvision import transforms
 from model import EncoderClothing
 from darknet import Darknet
 from PIL import Image
-#import util
+from util import *
 import cv2
 import pickle as pkl
 from preprocess import prep_image2
