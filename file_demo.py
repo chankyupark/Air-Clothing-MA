@@ -54,7 +54,7 @@ def detect_attributes(image, yolo_dim, yolov3, encoder):
 
     # Generate an caption from the image
     detections = yolov3(image_tensor, device, True) # prediction mode for yolo-v3
-    detections = write_results(detections, args.confidence, num_classes, device, nms=True, nms_conf=args.nms_thresh)
+    detections = write_results(detections, args.confidence, device, num_classes=80, nms=True, nms_conf=args.nms_thresh)
     # original image dimension --> im_dim
     #view_image(detections)
 
